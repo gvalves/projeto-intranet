@@ -868,18 +868,13 @@ a {
   position: relative;
 }
 
-.congress-events::before {
-  content: '';
+.congress-events-line {
   position: absolute;
   left: 20px;
-  top: 10px;
-  bottom: 10px;
   width: 2px;
-  background: linear-gradient(
-    180deg,
-    var(--blue-primary) 0%,
-    var(--blue-light) 100%
-  );
+  background: linear-gradient(180deg, var(--blue-primary) 0%, var(--blue-light) 100%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .congress-event {
@@ -888,6 +883,7 @@ a {
   margin-bottom: 22px;
   position: relative;
   padding-left: 20px;
+  z-index: 1;
 }
 
 .congress-date {
@@ -925,6 +921,34 @@ a {
 .congress-link-submit {
   background: #e8eff8;
   color: var(--blue-darker);
+}
+
+.submitted-works-list {
+  padding: 14px;
+  background: var(--gray-50);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.submitted-work-item {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.submitted-work-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 8px;
+}
+
+.submitted-work-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* ========== RODAPE / FOOTER ========== */

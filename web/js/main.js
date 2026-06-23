@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // 1. FILTRO DE BUSCA (RAMAIS)
   initRamalFilter();
 
+  // 1.1 BUSCA E PAGINAÇÃO (TRABALHOS SUBMETIDOS)
+  initSubmittedWorks();
+
   // 2. COLABORADORES (RAMAIS E ANIVERSARIANTES)
   initColaboradores();
 
@@ -18,10 +21,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 const RAMAIS_PAGE_SIZE = 10;
 const BIRTHDAYS_PAGE_SIZE = 4;
+const SUBMITTED_WORKS_PAGE_SIZE = 2;
 let ramaisData = [];
 let ramaisPage = 1;
 let aniversariantesData = [];
 let aniversariantesPage = 1;
+let submittedWorksData = [];
+let submittedWorksPage = 1;
 let feriasDataGlobal = [];
 let folgasDataGlobal = [];
 
@@ -49,6 +55,139 @@ function getFilteredRamais() {
   return ramaisData.filter(function (item) {
     return [item.nome, item.setor, item.ramal].join(' ').toLowerCase().includes(filter);
   });
+}
+
+function initSubmittedWorks() {
+  const worksList = document.getElementById('submittedWorksList');
+  const searchInput = document.getElementById('submittedWorkSearch');
+  if (!worksList) return;
+
+  submittedWorksData = Array.from(worksList.querySelectorAll('.submitted-work-item')).map(function (item) {
+    const titleEl = item.querySelector('.submitted-work-title');
+    const links = Array.from(item.querySelectorAll('.submitted-work-links a')).map(function (linkEl) {
+      return {
+        label: (linkEl.textContent || '').trim(),
+        href: linkEl.getAttribute('href') || '#'
+      };
+    });
+
+    return {
+      title: (titleEl ? titleEl.textContent : '').trim(),
+      links: links
+    };
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      submittedWorksPage = 1;
+      renderSubmittedWorksPage();
+    });
+  }
+
+  renderSubmittedWorksPage();
+}
+
+function getFilteredSubmittedWorks() {
+  const searchInput = document.getElementById('submittedWorkSearch');
+  const filter = (searchInput ? searchInput.value : '').toLowerCase();
+
+  if (!filter) return submittedWorksData;
+
+  return submittedWorksData.filter(function (item) {
+    const linksText = item.links.map(function (link) {
+      return link.label;
+    }).join(' ');
+
+    return [item.title, linksText].join(' ').toLowerCase().includes(filter);
+  });
+}
+
+function renderSubmittedWorksPage() {
+  const worksList = document.getElementById('submittedWorksList');
+  if (!worksList) return;
+
+  const filteredWorks = getFilteredSubmittedWorks();
+  const totalPages = Math.max(1, Math.ceil(filteredWorks.length / SUBMITTED_WORKS_PAGE_SIZE));
+  submittedWorksPage = Math.min(Math.max(submittedWorksPage, 1), totalPages);
+
+  worksList.innerHTML = '';
+
+  if (filteredWorks.length === 0) {
+    const emptyMessage = document.createElement('p');
+    emptyMessage.textContent = 'Nenhum trabalho encontrado.';
+    worksList.appendChild(emptyMessage);
+    renderSubmittedWorksPagination(0, 0);
+    return;
+  }
+
+  filteredWorks
+    .slice((submittedWorksPage - 1) * SUBMITTED_WORKS_PAGE_SIZE, submittedWorksPage * SUBMITTED_WORKS_PAGE_SIZE)
+    .forEach(function (item) {
+      const article = document.createElement('article');
+      article.className = 'submitted-work-item';
+
+      const titleEl = document.createElement('h4');
+      titleEl.className = 'submitted-work-title';
+      titleEl.textContent = item.title || 'Sem título';
+
+      const linksWrap = document.createElement('div');
+      linksWrap.className = 'submitted-work-links';
+
+      item.links.forEach(function (link) {
+        const linkEl = document.createElement('a');
+        linkEl.href = link.href;
+        linkEl.className = 'congress-link congress-link-submit';
+        linkEl.target = '_blank';
+        linkEl.rel = 'noopener noreferrer';
+        linkEl.textContent = link.label || 'Abrir trabalho';
+        linksWrap.appendChild(linkEl);
+      });
+
+      article.appendChild(titleEl);
+      article.appendChild(linksWrap);
+      worksList.appendChild(article);
+    });
+
+  renderSubmittedWorksPagination(filteredWorks.length, totalPages);
+}
+
+function renderSubmittedWorksPagination(totalItems, totalPages) {
+  const pagination = document.getElementById('submittedWorksPagination');
+  if (!pagination) return;
+
+  pagination.innerHTML = '';
+
+  if (totalItems === 0) {
+    pagination.textContent = '0 trabalhos';
+    return;
+  }
+
+  const prevButton = document.createElement('button');
+  const nextButton = document.createElement('button');
+  const status = document.createElement('span');
+
+  prevButton.type = 'button';
+  prevButton.textContent = 'Anterior';
+  prevButton.disabled = submittedWorksPage <= 1;
+  prevButton.addEventListener('click', function () {
+    submittedWorksPage -= 1;
+    renderSubmittedWorksPage();
+  });
+
+  nextButton.type = 'button';
+  nextButton.textContent = 'Próxima';
+  nextButton.disabled = submittedWorksPage >= totalPages;
+  nextButton.addEventListener('click', function () {
+    submittedWorksPage += 1;
+    renderSubmittedWorksPage();
+  });
+
+  status.className = 'ramal-pagination-status';
+  status.textContent = submittedWorksPage + ' / ' + totalPages + ' • ' + totalItems + ' trabalhos';
+
+  pagination.appendChild(prevButton);
+  pagination.appendChild(status);
+  pagination.appendChild(nextButton);
 }
 
 // 2. COLABORADORES (RAMAIS E ANIVERSARIANTES)
@@ -1093,8 +1232,34 @@ async function initEventosCongressos() {
       card.appendChild(infoEl);
       eventosContainer.appendChild(card);
     });
+
+    updateEventosTimeline(eventosContainer);
   } catch (error) {
     console.error('Erro ao carregar Eventos/Congressos:', error);
     eventosContainer.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
   }
+}
+
+function updateEventosTimeline(eventosContainer) {
+  if (!eventosContainer) return;
+
+  const existingLine = eventosContainer.querySelector('.congress-events-line');
+  if (existingLine) {
+    existingLine.remove();
+  }
+
+  const events = eventosContainer.querySelectorAll('.congress-event');
+  if (!events.length) return;
+
+  const firstEvent = events[0];
+  const lastEvent = events[events.length - 1];
+  const top = firstEvent.offsetTop;
+  const height = (lastEvent.offsetTop + lastEvent.offsetHeight) - top;
+
+  const timeline = document.createElement('div');
+  timeline.className = 'congress-events-line';
+  timeline.style.top = top + 'px';
+  timeline.style.height = Math.max(height, 0) + 'px';
+
+  eventosContainer.prepend(timeline);
 }
