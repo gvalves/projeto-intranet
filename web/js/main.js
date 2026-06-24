@@ -31,10 +31,6 @@ let submittedWorksPage = 1;
 let feriasDataGlobal = [];
 let folgasDataGlobal = [];
 
-function getApiUrl(path) {
-  return 'http://localhost:10638' + path;
-}
-
 // 1. FILTRO DE BUSCA (RAMAIS)
 function initRamalFilter() {
   var searchInput = document.getElementById('ramalSearch');
@@ -203,7 +199,7 @@ async function loadRamais() {
   if (!ramalBody) return;
 
   try {
-    const ramais = await fetchArrayStrict(getApiUrl('/api/colaboradores/ramais'), 'ramais');
+    const ramais = await fetchArrayStrict('/api/colaboradores/ramais', 'ramais');
     renderRamais(ramais);
   } catch (error) {
     console.error('Erro ao carregar ramais:', error);
@@ -216,7 +212,7 @@ async function loadAniversariantes() {
   if (!birthdayBody) return;
 
   try {
-    const aniversariantes = await fetchArrayStrict(getApiUrl('/api/colaboradores/aniversariantes'), 'aniversariantes');
+    const aniversariantes = await fetchArrayStrict('/api/colaboradores/aniversariantes', 'aniversariantes');
     renderAniversariantes(aniversariantes);
   } catch (error) {
     console.error('Erro ao carregar aniversariantes:', error);
@@ -434,9 +430,9 @@ function initPlantaoSection() {
   var calendarEl = document.getElementById('calendar');
   if (!calendarEl) return;
 
-  const URL_ESCALA = getApiUrl('/api/escalas');
-  const URL_FERIAS = getApiUrl('/api/ferias');
-  const URL_FOLGAS = getApiUrl('/api/folgas');
+  const URL_ESCALA = '/api/escalas';
+  const URL_FERIAS = '/api/ferias';
+  const URL_FOLGAS = '/api/folgas';
 
   Promise.all([
     fetchArray(URL_ESCALA, 'escala'),
@@ -1163,7 +1159,7 @@ async function initCarousel() {
 
 // 4. EVENTOS / CONGRESSOS VIA API
 async function initEventosCongressos() {
-  const URL_EVENTOS = getApiUrl('/api/eventos');
+  const URL_EVENTOS = '/api/eventos';
   const eventosContainer = document.getElementById('eventos-container');
   if (!eventosContainer) return;
 
