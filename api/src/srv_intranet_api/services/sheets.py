@@ -32,6 +32,10 @@ class SheetService:
     FERIAS_COLUMNS = ["Funcionário", "Início das Férias", "Término das Férias"]
     FOLGAS_COLUMNS = ["Funcionário", "Dias de Folga (Ex: 01, 05, 10)"]
     EVENTOS_COLUMNS = ["Data", "Titulo", "Local", "Link"]
+    NOTICIAS_FILE = "noticias.xlsx"
+    NOTICIAS_COLUMNS = ["Imagem", "Link"]
+    TRABALHOS_FILE = "trabalhos.xlsx"
+    TRABALHOS_COLUMNS = ["Congresso / Evento", "Nome para exibir no botão", "Arquivo PDF", "Ativo (SIM/NAO)"]
     COLABORADORES_COLUMNS = ["NOME", "RAMAL", "SETOR", "DATA_NASCIMENTO"]
 
     def __init__(self, sheets_dir: Path) -> None:
@@ -127,6 +131,41 @@ class SheetService:
 
         return eventos
 
+    def get_noticias(self) -> list[dict[str, str]]:
+        df = self._read_sheet(self.NOTICIAS_FILE, self.NOTICIAS_COLUMNS)
+        noticias: list[dict[str, str]] = []
+
+        for row in df.iter_rows(named=True):
+            imagem = _clean_text(row["Imagem"])
+            if not imagem:
+                continue
+
+            noticias.append({
+                "imagem": imagem,
+                "link": _clean_text(row["Link"]),
+            })
+
+        return noticias
+
+    def get_trabalhos(self) -> list[dict[str, Any]]:
+        df = self._read_sheet_with_title_row(self.TRABALHOS_FILE, self.TRABALHOS_COLUMNS)
+        groups: dict[str, list[dict[str, str]]] = {}
+
+        for row in df.iter_rows(named=True):
+            ativo = _clean_text(row["Ativo (SIM/NAO)"]).upper()
+            if ativo != "SIM":
+                continue
+
+            evento = _clean_text(row["Congresso / Evento"])
+            label = _clean_text(row["Nome para exibir no botão"])
+            arquivo = _clean_text(row["Arquivo PDF"])
+            if not evento or not label:
+                continue
+
+            groups.setdefault(evento, []).append({"label": label, "arquivo": arquivo})
+
+        return [{"evento": evento, "trabalhos": items} for evento, items in groups.items()]
+
     def get_ramais(self) -> list[dict[str, str]]:
         df = self._read_csv(self.COLABORADORES_FILE, self.COLABORADORES_COLUMNS)
         ramais: list[dict[str, str]] = []
@@ -177,6 +216,36 @@ class SheetService:
         else:
             try:
                 df = pl.read_excel(path)
+            except Exception as exc:
+                raise SheetError(f"Cannot read sheet file: {path}") from exc
+            self._cache[path] = CachedSheet(mtime_ns=mtime_ns, dataframe=df)
+
+        missing_columns = [column for column in required_columns if column not in df.columns]
+        if missing_columns:
+            raise SheetError(f"Missing columns in {filename}: {', '.join(missing_columns)}")
+
+        return df
+
+    def _read_sheet_with_title_row(self, filename: str, required_columns: list[str]) -> pl.DataFrame:
+        path = self.sheets_dir / filename
+        if not path.exists():
+            raise SheetError(f"Sheet file not found: {path}")
+
+        try:
+            mtime_ns = path.stat().st_mtime_ns
+        except OSError as exc:
+            raise SheetError(f"Cannot stat sheet file: {path}") from exc
+
+        cached = self._cache.get(path)
+        if cached and cached.mtime_ns == mtime_ns:
+            df = cached.dataframe
+        else:
+            try:
+                raw = pl.read_excel(path, has_header=False)
+                header_row = raw.row(1)
+                df = raw.slice(2).rename(
+                    {old: str(new) for old, new in zip(raw.columns, header_row)}
+                )
             except Exception as exc:
                 raise SheetError(f"Cannot read sheet file: {path}") from exc
             self._cache[path] = CachedSheet(mtime_ns=mtime_ns, dataframe=df)

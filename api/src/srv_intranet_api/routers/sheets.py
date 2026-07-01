@@ -11,7 +11,9 @@ from srv_intranet_api.schemas import (
     EventoItem,
     FeriasItem,
     FolgaItem,
+    NoticiaItem,
     RamalItem,
+    TrabalhoGroup,
 )
 from srv_intranet_api.services.sheets import SheetError, SheetService
 from srv_intranet_api.settings import Settings, get_settings
@@ -83,6 +85,26 @@ def get_folgas(service: SheetService = Depends(get_sheet_service)) -> list[dict[
 )
 def get_eventos(service: SheetService = Depends(get_sheet_service)) -> list[dict[str, str]]:
     return _handle_sheet_call(service.get_eventos)
+
+
+@router.get(
+    "/noticias",
+    response_model=list[NoticiaItem],
+    summary="List news carousel items",
+    description="Reads `noticias.xlsx` and returns image filenames and links for the news carousel.",
+)
+def get_noticias(service: SheetService = Depends(get_sheet_service)) -> list[dict[str, str]]:
+    return _handle_sheet_call(service.get_noticias)
+
+
+@router.get(
+    "/trabalhos",
+    response_model=list[TrabalhoGroup],
+    summary="List submitted works grouped by event",
+    description="Reads `trabalhos.xlsx` and returns active submitted works grouped by congress/event.",
+)
+def get_trabalhos(service: SheetService = Depends(get_sheet_service)) -> list[dict[str, Any]]:
+    return _handle_sheet_call(service.get_trabalhos)
 
 
 @router.get(

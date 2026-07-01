@@ -53,25 +53,30 @@ function getFilteredRamais() {
   });
 }
 
-function initSubmittedWorks() {
+async function initSubmittedWorks() {
   const worksList = document.getElementById('submittedWorksList');
   const searchInput = document.getElementById('submittedWorkSearch');
   if (!worksList) return;
 
-  submittedWorksData = Array.from(worksList.querySelectorAll('.submitted-work-item')).map(function (item) {
-    const titleEl = item.querySelector('.submitted-work-title');
-    const links = Array.from(item.querySelectorAll('.submitted-work-links a')).map(function (linkEl) {
+  try {
+    const response = await fetch('/api/trabalhos');
+    const groups = await response.json();
+
+    submittedWorksData = groups.map(function (group) {
       return {
-        label: (linkEl.textContent || '').trim(),
-        href: linkEl.getAttribute('href') || '#'
+        title: group.evento,
+        links: group.trabalhos.map(function (t) {
+          return {
+            label: t.label,
+            href: t.arquivo ? 'trabalhos/' + t.arquivo : '#'
+          };
+        })
       };
     });
-
-    return {
-      title: (titleEl ? titleEl.textContent : '').trim(),
-      links: links
-    };
-  });
+  } catch (error) {
+    console.error('Erro ao carregar trabalhos:', error);
+    submittedWorksData = [];
+  }
 
   if (searchInput) {
     searchInput.addEventListener('input', function () {
@@ -179,7 +184,7 @@ function renderSubmittedWorksPagination(totalItems, totalPages) {
   });
 
   status.className = 'ramal-pagination-status';
-  status.textContent = submittedWorksPage + ' / ' + totalPages + ' • ' + totalItems + ' trabalhos';
+  status.textContent = submittedWorksPage + ' / ' + totalPages + ' • ' + totalItems + ' eventos';
 
   pagination.appendChild(prevButton);
   pagination.appendChild(status);
@@ -1110,14 +1115,16 @@ async function initCarousel() {
   if (!track || !prevBtn || !nextBtn) return;
 
   try {
-    const response = await fetch('js/noticias.json');
+    const response = await fetch('/api/noticias');
     const noticias = await response.json();
 
     track.innerHTML = '';
     noticias.forEach(function (noticia) {
       const slide = document.createElement('div');
       slide.className = 'carousel-slide';
-      slide.innerHTML = '<a href="' + noticia.link + '" target="_blank"><img src="' + noticia.imagem + '" alt="' + noticia.titulo + '"></a>';
+      var imgSrc = noticia.imagem ? '/images/noticias/' + noticia.imagem : '';
+      var linkHref = noticia.link || '#';
+      slide.innerHTML = '<a href="' + linkHref + '" target="_blank"><img src="' + imgSrc + '" alt=""></a>';
       track.appendChild(slide);
     });
 

@@ -34,6 +34,8 @@ def test_sheet_endpoints_return_arrays() -> None:
         "/api/ferias",
         "/api/folgas",
         "/api/eventos",
+        "/api/noticias",
+        "/api/trabalhos",
         "/api/colaboradores/ramais",
         "/api/colaboradores/aniversariantes",
     ]:

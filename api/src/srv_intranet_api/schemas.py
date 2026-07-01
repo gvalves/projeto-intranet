@@ -105,6 +105,46 @@ class AniversarianteItem(BaseModel):
     setor: str = Field(description="Employee sector.", examples=["SETOR EXEMPLO"])
 
 
+class NoticiaItem(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"imagem": "slide1.png", "link": "https://example.org/noticia"}]
+        }
+    )
+
+    imagem: str = Field(description="Image filename relative to the noticias volume.", examples=["slide1.png"])
+    link: str = Field(default="", description="External URL for the news item.", examples=["https://example.org/noticia"])
+
+
+class TrabalhoLink(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"label": "The Impact of HLA-DRB1 Alleles", "arquivo": "efi2026/p254.pdf"}]
+        }
+    )
+
+    label: str = Field(description="Display label for the work link.", examples=["The Impact of HLA-DRB1 Alleles"])
+    arquivo: str = Field(description="PDF file path relative to the trabalhos volume.", examples=["efi2026/p254.pdf"])
+
+
+class TrabalhoGroup(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "evento": "EFI/BSHI Conference 2026",
+                    "trabalhos": [
+                        {"label": "The Impact of HLA-DRB1 Alleles", "arquivo": "efi2026/p254.pdf"},
+                    ],
+                }
+            ]
+        }
+    )
+
+    evento: str = Field(description="Congress or event name.", examples=["EFI/BSHI Conference 2026"])
+    trabalhos: list[TrabalhoLink] = Field(description="List of submitted works for this event.")
+
+
 class ApiError(BaseModel):
     model_config = ConfigDict(json_schema_extra={"examples": [{"detail": "Sheet file not found: /path/to/file.xlsx"}]})
 

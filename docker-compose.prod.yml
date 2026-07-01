@@ -1,21 +1,15 @@
 services:
   api:
-    image: registry-server.igen.local/intranet-api:latest
-    build:
-      context: ./api
+    image: registry-server.igen.local/intranet-api:${VERSION:-latest}
     environment:
       INTRANET_API_SHEETS_DIR: /app/data
-      INTRANET_API_CORS_ORIGINS: ${INTRANET_API_CORS_ORIGINS:-'http://localhost,http://web'}
+      INTRANET_API_CORS_ORIGINS: ${INTRANET_API_CORS_ORIGINS:-http://intranet,http://intranet.igen.local,https://intranet,https://intranet.igen.local}
     volumes:
       - ${INTRANET_API_SHEETS_DIR:-./api/data}:/app/data
     restart: unless-stopped
 
   web:
-    image: registry-server.igen.local/intranet-web:latest
-    build:
-      context: ./web
-    ports:
-      - '${WEB_PORT:-80}:80'
+    image: registry-server.igen.local/intranet-web:${VERSION:-latest}
     volumes:
       - ${INTRANET_NOTICIAS_DIR:-./web/images/noticias}:/srv/noticias
       - ${INTRANET_TRABALHOS_DIR:-./web/trabalhos}:/srv/trabalhos
@@ -27,3 +21,7 @@ services:
         aliases:
           - intranet-web
     restart: unless-stopped
+
+networks:
+  nginx-net:
+    external: true
